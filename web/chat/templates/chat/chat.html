@@ -1,0 +1,76 @@
+{% extends 'chat/base.html' %}
+{% block title %}OpenAI chat Demo{% endblock %}
+{% block nav %}
+{% include 'chat/nav_bar.html' %}
+{% endblock %}
+{% block content %}
+
+<div class="mx-auto">
+    <h1>OpenAI chat Demo</h1>
+</div>
+<!-- {{ chat_history }} -->
+<!-- h-screen instead of h-dvh: More predictable full height across browsers.
+    Removed justify-center: It centers content vertically, which prevents natural scroll if content grows.
+    overflow-y-auto: Enables vertical scrolling.
+    space-y-4: Adds spacing between chat posts.
+    scroll-smooth: Optional smooth scroll effect.
+    text-right / text-left: Better semantics and alignment than absolute positioning (right-0, left-0). 
+-->
+<div id="chat-container" class="h-screen overflow-y-auto flex flex-col px-6 py-12 lg:px-8 space-y-4 scroll-smooth">
+    {% if chat_history is not None %}
+        {% for post in chat_history %}
+        <!-- flex justify-end aligns human messages to the right.
+         flex justify-start aligns AI messages to the left.
+         max-w-[75%]: Limits bubble width for readability.
+         Background colors differ for clarity.
+         scroll-smooth: Enables smooth scrolling behavior. -->
+        <div class="flex {% if post.sender == 'human' %}justify-end{% else %}justify-start{% endif %}">
+            <div class="max-w-[75%] p-3 rounded-lg 
+                                    {% if post.sender == 'human' %}
+                                        bg-blue-500 text-white
+                                    {% else %}
+                                        bg-gray-200 text-gray-800
+                                    {% endif %}">
+                <strong>{{ post.sender|capfirst }}:</strong> {{ post.text }}
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+    <div id="chat-messages"></div>
+</div>
+<div class="">
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+{% endblock %}
+{% block scripts %}
+    <script>
+        var $j = jQuery.noConflict();
+        function sendMessage(){
+            var userInput = $j('#user-input').val()
+            if($j.trim(userInput) !== ''){
+                // console.log(userInput.val())
+                console.log('{% url "chat" %}')
+                $j('#chat-messages').append('<div class="flex justify-end"><div class="max-w-[75%] p-3 rounded-lg bg-blue-500 text-white"><p><strong>You:</strong>' + userInput + '</p></div></div>');
+                $j('#user-input').val('');
+                $j.ajax({
+                    url: '{% url "chat" %}',
+                    type: 'POST',
+                    data: {
+                        'message': userInput
+                    },
+                    success: function(response){
+                        $j('#chat-messages').append('<div class="flex justify-start"><div class="max-w-[75%] p-3 rounded-lg bg-gray-200 text-gray-800"><p><strong>AI:</strong>' + response.message + '</p>');
+                    }
+                });
+            }
+        }
+
+        $j('#user-input').keypress(function(e) {
+            if(e.message == 13){
+                sendMessage();
+            }
+        });
+    </script>
+{% endblock %}

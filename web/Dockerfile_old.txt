@@ -1,0 +1,35 @@
+# Use the official Python runtime image
+FROM python:3.9-alpine3.19
+
+# Update apk packages to fix vulnerabilities
+RUN apk update && apk upgrade
+
+# Create the app directory
+RUN mkdir /app
+
+# Define work directory
+WORKDIR /app
+
+# Set environment variable
+# Prevents Python from writing pyc files to disk
+ENV PYTHONDONTWRITEBYCODE=1
+# Prevents Python from buffering stdout and stderr
+ENV PYTHONUNBUFFERED=1
+
+# Upgrade pip
+RUN pip install --upgrade pip
+
+# Copy the Django project and install dependencies
+COPY requirements.txt /app/
+
+# run this command to install all dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the django project to the container
+COPY . /app/
+
+# Expose the django port
+EXPOSE 8000
+
+# Run Django's development server
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

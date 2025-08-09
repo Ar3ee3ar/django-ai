@@ -1,0 +1,77 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+# select self-hosted to run pipeline
+pool: my-personal-computer
+  # vmImage: windows-latest # use pipeline service of azure
+
+steps:
+- checkout: self # checkout the Azure DevOps repo into the pipeline agent
+  persistCredentials: 'true' # ensure Git credentials persist across steps (needed for pushing)
+
+# set GitHub API authentication header using Personal Access Token (PAT)
+# define branch that want to push to
+# GitHub API endpoint use to check if selected branch exist
+# config Git credential with email and name
+# remove existing Git history (if any) to start fresh
+# try to fetch branch info from GitHub - if found, branch exist
+# - create timestamp file for demonstration (or modify actual files here)
+# - stage all changes
+# - commit changes with a message
+# - create and switch to target branch
+# - add remote repo
+# - push to target branch
+# if selected branch is not exist, github return error and go to catch
+# - create readme to stage and commit new file
+# - rename current branch to desired branch name
+# - add remote
+# - push new branch to GitHub
+- task: PowerShell@2
+  displayName: 'Clone GitHub Repo and Push Changes'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $headers = @{ Authorization = "Bearer $env:GITHUB_PAT" }
+      $branch = "master"
+      $repoApi = "https://api.github.com/repos/$env:GITHUB_REPO/branches/$branch"
+
+      git config --global user.email "$env:GITHUB_EMAIL"
+      git config --global user.name "$env:GITHUB_NAME"
+      git config --global credential.helper ""
+
+      Remove-Item -Force -Recurse .git -ErrorAction SilentlyContinue
+
+      git init
+
+      try {
+          Invoke-RestMethod -Uri $repoApi -Headers $headers -Method GET
+          Write-Host "✅ Branch exists. Pushing changes to '$branch'."
+
+          # Create a dummy file or update 
+          echo "Updated at $(Get-Date)" > timestamp.txt
+          git add .
+          git commit -m "Update from Azure DevOps"
+
+          git checkout -b $branch
+          git remote add origin https://$env:GITHUB_PAT@github.com/$env:GITHUB_REPO.git
+          git push origin $branch -f
+      }
+      catch {
+          Write-Host "⚠️ Branch '$branch' not found. Creating new branch and pushing initial commit."
+          echo "# Initial Commit" > README.md
+          git add README.md
+          git commit -m "Initial commit from Azure DevOps"
+
+          git branch -M $branch
+          git remote add origin https://$env:GITHUB_PAT@github.com/$env:GITHUB_REPO.git
+          git push origin $branch
+      }
+  env:
+    GITHUB_PAT: $(GITHUB_PAT)
+    GITHUB_REPO: $(GITHUB_REPO)     
+    GITHUB_EMAIL: $(GITHUB_EMAIL)
+    GITHUB_NAME: $(GITHUB_NAME)

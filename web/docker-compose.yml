@@ -1,0 +1,21 @@
+secrets:
+  secret_key:
+    file: ../secrets/secret_key
+  redis_location:
+    file: ../secret_key/redis_location
+services:
+  web:
+    build: .
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - static_volume:/app/staticfiles
+    expose:
+      - 8000
+    env_file:
+      - ../.env
+    secrets:
+      - secret_key
+      - redis_location
+    environment:
+      - SECRET_KEY_FILE:/run/secrets/secret_key
+      - REDIS_LOCATION_FILE:/run/secrets/redis_location

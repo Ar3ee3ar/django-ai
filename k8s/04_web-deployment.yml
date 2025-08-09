@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      name: web
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: docker.io/ar3ee3arcs/personalproj:latest
+          envFrom:
+            - configMapRef:
+                name: web-env
+            - secretRef:
+                name: web-secret
+          volumeMounts:
+            - name: db-volume
+              mountPath: /app/data
+            - name: static-volume
+              mountPath: /app/staticfiles
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      volumes:
+        - name: db-volume
+          persistentVolumeClaim:
+            claimName: db-pvc
+        - name: static-volume
+          persistentVolumeClaim:
+            claimName: static-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+    - port: 8000
+      targetPort: 8000
